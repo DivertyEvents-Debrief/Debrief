@@ -61,6 +61,13 @@ security definer
 set search_path = public
 as $$
 begin
+  -- Hors session (SQL Editor, migration, maintenance), le contrôle
+  -- d'accès a déjà eu lieu en amont : le déclencheur se retire.
+  -- Sans cela, personne ne peut créer le premier administrateur.
+  if auth.uid() is null then
+    return new;
+  end if;
+
   if not public.is_admin() then
     if new.role <> old.role
        or new.active <> old.active

@@ -59,6 +59,7 @@ du projet et les deux clés.
    20260805000200_workspace_rpc.sql
    20260805000300_service_role_grants.sql
    20260805000400_admin_rpc.sql
+   20260805000500_first_admin_guard.sql
    ```
 
    L'ordre compte : chaque fichier s'appuie sur le précédent.
@@ -95,7 +96,17 @@ champ modifiable depuis le navigateur. On crée donc le compte à la main.
    ```
 
 **Vérification :** dans **Table Editor** → `profiles`, votre ligne affiche
-`role = admin`.
+`role = admin`. Reconnectez-vous ensuite : le rôle est lu à l'ouverture de
+session, un simple rechargement ne suffit pas toujours.
+
+> **Cette étape n'est pas facultative.** Sans elle, vous vous connectez
+> mais l'application vous traite en commercial : ni Statistiques, ni
+> Administration. Et rien dans l'interface ne permet de se promouvoir —
+> c'est voulu, mais cela rend ce passage par le SQL obligatoire une fois.
+>
+> La migration `20260805000500` promeut automatiquement le compte le plus
+> ancien si aucun administrateur n'existe : si vous l'avez appliquée après
+> avoir créé votre compte, c'est peut-être déjà fait.
 
 ---
 
