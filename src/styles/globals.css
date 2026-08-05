@@ -1,0 +1,178 @@
+@import 'tailwindcss';
+
+/* =====================================================================
+   Identité visuelle
+   Une seule couleur pilote toute l'échelle : `--brand`, définie par
+   l'administrateur dans les réglages et injectée sur <html>. Les
+   variations sont dérivées avec color-mix, donc changer la couleur
+   principale suffit à recolorer l'application entière.
+   ===================================================================== */
+
+@theme {
+  --brand: #1f8a4c;
+  --warm: #e8892b;
+
+  --color-brand: var(--brand);
+  --color-brand-soft: color-mix(in oklab, var(--brand) 12%, white);
+  --color-brand-softer: color-mix(in oklab, var(--brand) 6%, white);
+  --color-brand-line: color-mix(in oklab, var(--brand) 28%, white);
+  --color-brand-strong: color-mix(in oklab, var(--brand) 85%, black);
+
+  --color-warm: var(--warm);
+  --color-warm-soft: color-mix(in oklab, var(--warm) 14%, white);
+  --color-warm-line: color-mix(in oklab, var(--warm) 32%, white);
+  --color-warm-strong: color-mix(in oklab, var(--warm) 80%, black);
+
+  --color-canvas: #f6f8f5;
+  --color-surface: #ffffff;
+  --color-line: #e2e9e3;
+  --color-line-strong: #cfdad2;
+
+  --color-ink: #12211a;
+  --color-ink-muted: #4b5c53;
+  --color-ink-faint: #6f8078;
+
+  --color-attention: #b4530c;
+  --color-attention-soft: #fdf1e4;
+  --color-danger: #a8302a;
+  --color-danger-soft: #fceceb;
+  --color-info: #1b6390;
+  --color-info-soft: #e8f2f8;
+
+  --font-display: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --radius-card: 16px;
+  --radius-control: 11px;
+
+  --shadow-card: 0 1px 2px rgb(18 33 26 / 0.04), 0 8px 24px -16px rgb(18 33 26 / 0.18);
+  --shadow-lift: 0 2px 4px rgb(18 33 26 / 0.06), 0 18px 40px -22px rgb(18 33 26 / 0.28);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-line);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: 'ss01', 'cv05';
+    line-height: 1.55;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+
+  /* Focus visible partout, y compris au clavier sur mobile (WCAG 2.2 AA). */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-strong);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  /* Chiffres alignés dans les tableaux et les statistiques. */
+  table,
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* ------------------------------------------------------------------
+     Le tampon : signature visuelle de la plateforme.
+     Reprend le tampon encré de l'univers Diverty pour afficher la
+     référence unique d'un débriefing.
+     ------------------------------------------------------------------ */
+  .stamp {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 0.9rem 1.1rem;
+    border: 2px solid var(--color-brand);
+    border-radius: 14px;
+    color: var(--color-brand-strong);
+    background: var(--color-brand-softer);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    transform: rotate(-2.5deg);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--brand) 25%, white);
+  }
+
+  .stamp__label {
+    font-size: 0.6rem;
+    opacity: 0.75;
+  }
+
+  .stamp__value {
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  /* Cartes aérées, angles légèrement arrondis. */
+  .card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Zone tactile minimale de 44px sur les contrôles du formulaire. */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+@layer utilities {
+  .animate-rise {
+    animation: rise 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Masque visuellement sans masquer pour les lecteurs d'écran. */
+  .sr-only-focusable:not(:focus):not(:focus-within) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}

@@ -1,0 +1,34 @@
+project_id = "debrief-evenementiel"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
+
+[storage]
+enabled = true
+file_size_limit = "10MiB"
+
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+# Adresses autorisées après connexion : ajouter l'URL GitHub Pages une fois
+# le dépôt publié, sinon les liens d'invitation renvoient vers localhost.
+additional_redirect_urls = ["http://localhost:5173", "https://VOTRE-PSEUDO.github.io"]
+jwt_expiry = 3600
+enable_signup = false
+
+[auth.email]
+enable_signup = false
+enable_confirmations = true
+
+# Le formulaire public n'a pas de compte : la fonction se déploie sans
+# vérification de jeton et applique ses propres contrôles.
+[functions.public-submission]
+verify_jwt = false
