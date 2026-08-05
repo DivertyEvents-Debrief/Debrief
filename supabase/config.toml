@@ -20,7 +20,7 @@ enabled = true
 site_url = "http://localhost:5173"
 # Adresses autorisées après connexion : ajouter l'URL GitHub Pages une fois
 # le dépôt publié, sinon les liens d'invitation renvoient vers localhost.
-additional_redirect_urls = ["http://localhost:5173", "https://VOTRE-PSEUDO.github.io"]
+additional_redirect_urls = ["http://localhost:5173", "https://divertyevents-debrief.github.io"]
 jwt_expiry = 3600
 enable_signup = false
 
