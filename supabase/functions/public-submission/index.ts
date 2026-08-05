@@ -27,9 +27,15 @@ const TURNSTILE_SECRET = Deno.env.get('TURNSTILE_SECRET_KEY') ?? ''
 // Origines autorisées : l'adresse GitHub Pages du site, séparées par des
 // virgules. Laisser vide autorise tout le monde (pratique en local, à
 // resserrer une fois l'adresse définitive connue).
+// La barre finale est retirée des deux côtés de la comparaison :
+// l'en-tête `Origin` du navigateur n'en a jamais, et une valeur saisie
+// avec une barre ne correspondrait donc jamais. C'est une faute de saisie
+// trop facile pour qu'elle bloque tous les envois.
+const normalizeOrigin = (value: string) => value.trim().replace(/\/+$/, '')
+
 const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') ?? '')
   .split(',')
-  .map((o) => o.trim())
+  .map(normalizeOrigin)
   .filter(Boolean)
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
@@ -37,11 +43,13 @@ const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
 })
 
 function corsHeaders(origin: string | null): Record<string, string> {
+  const candidate = origin ? normalizeOrigin(origin) : null
+
   const allowed =
     ALLOWED_ORIGINS.length === 0
       ? (origin ?? '*')
-      : origin && ALLOWED_ORIGINS.includes(origin)
-        ? origin
+      : candidate && ALLOWED_ORIGINS.includes(candidate)
+        ? origin!
         : ALLOWED_ORIGINS[0]
 
   return {

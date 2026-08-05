@@ -716,14 +716,22 @@ begin
       cross join lateral (
         select count(*) as n from public.filter_debriefs(v_filters) d where d.overall_rating = g.rating
       ) c), '[]'::jsonb),
+    -- L'agrégation se fait dans une sous-requête : Postgres interdit
+    -- d'imbriquer avg() ou count() directement dans jsonb_agg().
     'timeline', coalesce((
       select jsonb_agg(jsonb_build_object(
-               'bucket', date_trunc('week', d.submitted_at)::date,
-               'overall_average', round(avg(d.overall_rating)::numeric, 2),
-               'internal_average', round(avg(d.internal_satisfaction_rating)::numeric, 2),
-               'count', count(*)) order by date_trunc('week', d.submitted_at))
-      from public.filter_debriefs(v_filters) d
-      group by date_trunc('week', d.submitted_at)), '[]'::jsonb),
+               'bucket', t.bucket,
+               'overall_average', t.overall_average,
+               'internal_average', t.internal_average,
+               'count', t.n) order by t.bucket)
+      from (
+        select date_trunc('week', d.submitted_at)::date               as bucket,
+               round(avg(d.overall_rating)::numeric, 2)               as overall_average,
+               round(avg(d.internal_satisfaction_rating)::numeric, 2) as internal_average,
+               count(*)                                               as n
+        from public.filter_debriefs(v_filters) d
+        group by date_trunc('week', d.submitted_at)
+      ) t), '[]'::jsonb),
     'can_view_full_statistics', public.has_permission('statistics_full'),
     'generated_at', now()
   );

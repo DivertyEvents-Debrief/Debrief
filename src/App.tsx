@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { PublicDebriefPage } from '@/routes/public/debrief-page'
 import { SessionProvider } from '@/lib/session'
 import { RequireAuth } from '@/routes/espace/require-auth'
+import { RequireAdmin } from '@/routes/espace/administration/require-admin'
 import { PageLoader } from '@/components/ui/page-loader'
 
 // L'espace permanent est chargé à la demande : un référent qui ouvre le
@@ -13,6 +14,12 @@ const EspaceLayout = lazy(() => import('@/routes/espace/layout'))
 const DashboardPage = lazy(() => import('@/routes/espace/dashboard-page'))
 const DebriefListPage = lazy(() => import('@/routes/espace/debrief-list-page'))
 const DebriefDetailPage = lazy(() => import('@/routes/espace/debrief-detail-page'))
+const AdministrationLayout = lazy(() => import('@/routes/espace/administration/layout'))
+const AccountsPage = lazy(() => import('@/routes/espace/administration/accounts-page'))
+const ReferentsPage = lazy(() => import('@/routes/espace/administration/referents-page'))
+const StatusesPage = lazy(() => import('@/routes/espace/administration/statuses-page'))
+const BrandingPage = lazy(() => import('@/routes/espace/administration/branding-page'))
+const LogsPage = lazy(() => import('@/routes/espace/administration/logs-page'))
 
 // GitHub Pages sert le site sous /<nom-du-depot>/ : le routeur doit
 // connaître ce préfixe, sinon toutes les routes tombent à côté.
@@ -41,6 +48,20 @@ export function App() {
               <Route index element={<DashboardPage />} />
               <Route path="debriefings" element={<DebriefListPage />} />
               <Route path="debriefings/:id" element={<DebriefDetailPage />} />
+              <Route
+                path="administration"
+                element={
+                  <RequireAdmin>
+                    <AdministrationLayout />
+                  </RequireAdmin>
+                }
+              >
+                <Route index element={<AccountsPage />} />
+                <Route path="referents" element={<ReferentsPage />} />
+                <Route path="statuts" element={<StatusesPage />} />
+                <Route path="identite" element={<BrandingPage />} />
+                <Route path="journal" element={<LogsPage />} />
+              </Route>
             </Route>
             <Route path="*" element={<Navigate to="/debrief" replace />} />
           </Routes>

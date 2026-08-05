@@ -128,6 +128,7 @@ debrief-app/
 ├── supabase/
 │   ├── config.toml
 │   ├── functions/public-submission/index.ts empreinte, débit, captcha, submit_debrief
+│   ├── functions/admin-users/index.ts       création de comptes (admin uniquement)
 │   ├── migrations/
 │   │   ├── …000100_foundations.sql          types, normalize_label, fonctions de sécurité
 │   │   ├── …000200_core_tables.sql          profiles, referents, statuses, réglages
@@ -151,6 +152,7 @@ debrief-app/
     │   ├── public-api.ts                    pont vers la fonction Edge
     │   ├── public-form.ts                   get_public_form + identité visuelle
     │   ├── workspace-api.ts                 liste, fiche, statut, notes, images
+    │   ├── admin-api.ts                     comptes, référents, statuts, réglages
     │   ├── types.ts · permissions.ts · ratings.ts · utils.ts
     │   └── form-validation.ts               règles dérivées des modules
     ├── components/
@@ -163,18 +165,19 @@ debrief-app/
     └── routes/
         ├── public/debrief-page.tsx          formulaire + porte du code d'accès
         └── espace/{login,layout,dashboard,require-auth,
-                    debrief-list,debrief-detail}
+                    debrief-list,debrief-detail,
+                    administration/{layout,accounts,referents,
+                                    statuses,branding,logs}}
 ```
 
 ### Suite prévue
 
-Fondations, sécurité, statistiques SQL, formulaire public, espace permanent (liste et fiche) et chaîne de déploiement sont en place. Restent à écrire, dans cet ordre :
+Fondations, sécurité, statistiques SQL, formulaire public, espace permanent (liste, fiche) et administration complète sont en place. Restent à écrire, dans cet ordre :
 
 | Lot | Contenu | Ce sur quoi il s'appuie |
 |---|---|---|
 | **3** | `/espace/statistiques` : KPI avec comparaison, graphiques Recharts cliquables, tableaux par commercial / référent / client, rappels, matériel, champs personnalisés, tendances, vues enregistrées | les dix RPC `stats_*`, déjà écrites et testables en SQL |
 | **4** | Constructeur de formulaire : liste des versions, édition des modules, réordonnancement, prévisualisation, publication | `duplicate_form_version()`, `publish_form_version()`, `assert_form_version_integrity()` |
-| **5** | Administration : comptes et invitations, référents (dont import CSV), statuts, identité visuelle, journaux | RLS admin déjà posée |
 | **6** | Exports CSV / Excel multi-feuilles / PDF individuel / PDF de synthèse / archive d'images, et emails de notification | `statistic_export_logs`, `notifications` |
 
 Chaque lot est essentiellement de l'interface : les règles métier, le périmètre de sécurité et les agrégations qu'il consomme existent déjà et sont interrogeables en `psql`.

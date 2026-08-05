@@ -106,19 +106,30 @@ comment on function public.normalize_label(text) is
 -- Fonctions de sécurité
 -- SECURITY DEFINER : elles lisent `profiles` sans déclencher les
 -- politiques RLS de `profiles` (sinon récursion infinie).
+--
+-- Elles sont écrites en plpgsql et non en sql : `profiles` n'existe pas
+-- encore à ce stade (elle arrive dans la migration 0002), et une fonction
+-- `language sql` fait analyser son corps dès la création. En plpgsql, les
+-- noms sont résolus à l'exécution, ce qui autorise cet ordre.
 -- ---------------------------------------------------------------------
 create or replace function public.current_user_role()
 returns public.user_role
-language sql
+language plpgsql
 stable
 security definer
 set search_path = public
 as $$
-  select p.role
+declare
+  v_role public.user_role;
+begin
+  select p.role into v_role
   from public.profiles p
   where p.id = auth.uid()
     and p.active
   limit 1;
+
+  return v_role;
+end;
 $$;
 
 create or replace function public.is_admin()
@@ -143,18 +154,23 @@ $$;
 
 create or replace function public.has_permission(p_permission text)
 returns boolean
-language sql
+language plpgsql
 stable
 security definer
 set search_path = public
 as $$
-  select public.is_admin()
-      or exists (
-        select 1
-        from public.profile_permissions pp
-        where pp.profile_id = auth.uid()
-          and pp.permission = p_permission
-      );
+begin
+  if public.is_admin() then
+    return true;
+  end if;
+
+  return exists (
+    select 1
+    from public.profile_permissions pp
+    where pp.profile_id = auth.uid()
+      and pp.permission = p_permission
+  );
+end;
 $$;
 
 comment on function public.has_permission(text) is

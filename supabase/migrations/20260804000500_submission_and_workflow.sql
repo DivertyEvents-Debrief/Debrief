@@ -288,7 +288,9 @@ begin
     values (
       v_recipient.id,
       v_debrief_id,
-      case when v_callback then 'callback_requested' else 'new_debrief' end,
+      -- Le CASE produit du texte ; la colonne attend l'enum. Postgres ne
+      -- convertit pas implicitement texte -> enum, d'où le cast explicite.
+      (case when v_callback then 'callback_requested' else 'new_debrief' end)::public.notification_type,
       case when v_callback
         then 'Demande de rappel — ' || v_client_name
         else 'Nouveau débriefing — ' || v_client_name

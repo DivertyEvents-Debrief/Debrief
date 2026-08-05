@@ -23,6 +23,13 @@ export type AppPermission =
   | 'settings:manage'
   | 'logs:read'
 
+/**
+ * Sous-ensemble accordable compte par compte. `AppPermission` liste toutes
+ * les capacités du produit ; seules ces trois-là existent comme lignes dans
+ * `profile_permissions` — la contrainte CHECK de la table fait foi.
+ */
+export type GrantablePermission = 'statistics_full' | 'form_builder' | 'export_global'
+
 export type NotificationPreference = 'immediate' | 'daily_digest' | 'callback_only' | 'none'
 
 export type FormModuleType =

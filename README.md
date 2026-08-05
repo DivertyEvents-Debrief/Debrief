@@ -101,10 +101,12 @@ fonction Edge.
 ### 2. Base de données
 
 ```bash
-npm install -g supabase
-supabase login
-supabase link --project-ref VOTRE_REF
-supabase db push                    # applique supabase/migrations/
+# `npm install -g supabase` n'est plus pris en charge : la ligne de
+# commande s'installe en dépendance du projet.
+npm install -D supabase
+npx supabase login
+npx supabase link --project-ref VOTRE_REF
+npx supabase db push                 # applique supabase/migrations/
 ```
 
 Le paramétrage initial (réglages, statuts, référents, formulaire version 1)
@@ -115,10 +117,16 @@ seed d'un coup.
 ### 3. Fonction Edge
 
 ```bash
-supabase secrets set SUBMISSION_FINGERPRINT_SALT="$(openssl rand -hex 32)"
-supabase secrets set ALLOWED_ORIGINS="https://VOTRE-PSEUDO.github.io"
-supabase functions deploy public-submission --no-verify-jwt
+npx supabase secrets set SUBMISSION_FINGERPRINT_SALT="$(openssl rand -hex 32)"
+npx supabase secrets set ALLOWED_ORIGINS="https://VOTRE-PSEUDO.github.io"
+npx supabase functions deploy public-submission --no-verify-jwt
 ```
+
+Tout cela se fait aussi depuis le tableau de bord, sans rien installer :
+Edge Functions → *Deploy a new function* → *Via Editor*, puis onglet
+*Secrets*. Dans ce cas, pensez à désactiver « Verify JWT with legacy
+secret » dans les réglages de la fonction — l'équivalent de
+`--no-verify-jwt`, et il se réactive à chaque redéploiement.
 
 `--no-verify-jwt` est nécessaire : les référents n'ont pas de compte, donc
 pas de jeton. La fonction applique ses propres contrôles à la place — code

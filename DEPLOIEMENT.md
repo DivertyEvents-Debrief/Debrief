@@ -57,6 +57,8 @@ du projet et les deux clés.
    20260804000800_storage_and_grants.sql
    20260805000100_public_form_rpc.sql
    20260805000200_workspace_rpc.sql
+   20260805000300_service_role_grants.sql
+   20260805000400_admin_rpc.sql
    ```
 
    L'ordre compte : chaque fichier s'appuie sur le précédent.
@@ -114,14 +116,96 @@ minutes, à chaque affichage.
 ## Étape 5 — Déployer la fonction d'envoi
 
 C'est la pièce qui remplace le serveur. Elle détient la clé de service et
-reste la seule à pouvoir écrire un débriefing.
+reste la seule à pouvoir écrire un débriefing. Sans elle, le formulaire
+public s'affiche mais l'envoi échoue.
 
-Sur votre ordinateur, dans le dossier du projet :
+Deux chemins. **Le premier ne demande rien à installer** — prenez-le si vous
+n'avez pas déjà la ligne de commande Supabase qui fonctionne.
+
+### Option A — depuis le tableau de bord (recommandé)
+
+**5.1** Menu de gauche : **Edge Functions**. Bouton **Deploy a new
+function**, puis **Via Editor**.
+
+**5.2** Nom de la fonction : `public-submission`, exactement. Le front
+appelle cette adresse précise ; une faute de frappe ici et l'envoi renverra
+une erreur 404 que rien n'expliquera.
+
+**5.3** L'éditeur charge un exemple. **Effacez tout**, puis collez
+l'intégralité de `supabase/functions/public-submission/index.ts`.
+
+**5.4** Cliquez **Deploy function**. Comptez trente secondes.
+
+**5.5 — l'étape qu'on oublie.** Ouvrez la fonction déployée, allez dans ses
+réglages et **désactivez « Verify JWT with legacy secret »**.
+
+Les référents n'ont pas de compte, donc pas de jeton d'authentification.
+Tant que cette option est active, la passerelle Supabase rejette leurs
+envois avec une erreur 401 *avant même* que votre code s'exécute — et rien
+n'apparaît dans les journaux, ce qui rend le diagnostic pénible.
+
+> **Ce réglage se réactive tout seul à chaque redéploiement de la
+> fonction.** C'est un comportement connu de Supabase, pas une erreur de
+> votre part. Prenez l'habitude de le revérifier après chaque mise à jour
+> de la fonction.
+
+La sécurité n'en souffre pas : la fonction applique ses propres contrôles —
+code d'accès facultatif, limitation de débit par empreinte, champ piège,
+captcha — et toute la validation métier se fait ensuite en base.
+
+**5.6** Toujours dans **Edge Functions**, onglet **Secrets**. Ajoutez :
+
+| Nom | Valeur |
+| --- | --- |
+| `SUBMISSION_FINGERPRINT_SALT` | une longue chaîne aléatoire, voir plus bas |
+| `ALLOWED_ORIGINS` | laissez vide pour l'instant, on la remplit à l'étape 8 |
+
+Pour le sel, n'importe quelle suite d'une soixantaine de caractères
+aléatoires convient. Sous PowerShell :
+
+```powershell
+-join ((1..64) | ForEach-Object { '{0:x}' -f (Get-Random -Max 16) })
+```
+
+Sous macOS ou Linux : `openssl rand -hex 32`. À défaut, un générateur de
+mot de passe fait l'affaire — cette valeur ne sert qu'à hacher les
+empreintes de visiteurs, et elle n'a jamais besoin d'être relue.
+
+> **N'ajoutez pas `SUPABASE_URL` ni `SUPABASE_SERVICE_ROLE_KEY`.** Supabase
+> les injecte automatiquement dans les fonctions Edge, et refuse d'ailleurs
+> les secrets dont le nom commence par `SUPABASE_`.
+
+**5.7 — Vérification.** Dans l'onglet de test intégré de la fonction,
+envoyez ce corps de requête :
+
+```json
+{ "action": "start" }
+```
+
+Réponse attendue :
+
+```json
+{ "ok": true, "data": { "draftId": "…" } }
+```
+
+Un identifiant revient : la fonction lit la base, trouve la version publiée
+du formulaire et crée un brouillon. Tout le circuit est bon.
+
+Si vous obtenez `{"ok":false,"error":"Le formulaire n'est pas publié…"}`,
+la fonction marche mais le seed de l'étape 2 n'est pas passé. Si vous
+obtenez une erreur 401, reprenez le point 5.5.
+
+### Option B — depuis la ligne de commande
+
+Utile si vous prévoyez de travailler en local. **`npm install -g supabase`
+ne fonctionne pas** : Supabase a retiré la prise en charge de
+l'installation globale par npm. Installez la ligne de commande comme
+dépendance du projet :
 
 ```bash
-npm install -g supabase
-supabase login
-supabase link --project-ref VOTRE_REF
+npm install -D supabase
+npx supabase login
+npx supabase link --project-ref VOTRE_REF
 ```
 
 `VOTRE_REF` est la suite de lettres dans l'URL du tableau de bord :
@@ -130,24 +214,32 @@ supabase link --project-ref VOTRE_REF
 Puis :
 
 ```bash
-# Sel de hachage des empreintes visiteurs. Aucune adresse IP n'est
-# stockée en clair : seul ce hachage salé sert à limiter les abus.
-supabase secrets set SUBMISSION_FINGERPRINT_SALT="$(openssl rand -hex 32)"
-
-# Adresse autorisée à appeler la fonction (à ajuster à l'étape 8).
-supabase secrets set ALLOWED_ORIGINS="https://VOTRE-PSEUDO.github.io"
-
-supabase functions deploy public-submission --no-verify-jwt
+npx supabase secrets set SUBMISSION_FINGERPRINT_SALT="$(openssl rand -hex 32)"
+npx supabase functions deploy public-submission --no-verify-jwt
 ```
 
-Sous Windows sans `openssl`, remplacez la première commande par :
+Le `--no-verify-jwt` fait ce que le point 5.5 fait à la main.
 
-```powershell
-supabase secrets set SUBMISSION_FINGERPRINT_SALT=(-join ((1..64) | ForEach-Object { '{0:x}' -f (Get-Random -Max 16) }))
-```
+Sur Windows, `scoop install supabase` installe aussi la commande de façon
+globale si vous préférez.
 
 **Vérification :** menu **Edge Functions**, `public-submission` apparaît
-avec le statut *Deployed*.
+avec le statut *Deployed*, et le test du point 5.7 répond.
+
+### 5.8 — La seconde fonction : `admin-users`
+
+Créer un compte demande la clé de service, donc une fonction Edge elle
+aussi. Même procédure que ci-dessus : *Deploy a new function* → *Via
+Editor*, nom `admin-users`, contenu de
+`supabase/functions/admin-users/index.ts`.
+
+**Différence importante : laissez « Verify JWT » ACTIVÉ sur celle-ci.**
+Elle n'est pas publique — elle vérifie que l'appelant est un
+administrateur actif, en relisant son rôle en base avec la clé de
+service. La session du navigateur n'est jamais crue sur parole.
+
+Sans cette fonction, l'espace d'administration s'ouvre normalement mais le
+bouton « Créer » restera sans effet.
 
 ---
 
