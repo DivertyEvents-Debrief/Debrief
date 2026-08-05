@@ -1,0 +1,46 @@
+name: Migrations et fonction Edge Supabase
+
+# La base et la fonction Edge suivent le même dépôt que le front : une
+# migration ajoutée au projet part en production avec le reste.
+#
+# Déclenchement manuel possible depuis l'onglet Actions — utile pour
+# rejouer un déploiement de fonction sans toucher au SQL.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/functions/**'
+      - 'supabase/config.toml'
+  workflow_dispatch:
+
+jobs:
+  deployer:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Liaison au projet
+        run: supabase link --project-ref "$PROJECT_REF"
+
+      - name: Aperçu des migrations à appliquer
+        run: supabase migration list --linked
+
+      - name: Application des migrations
+        run: supabase db push --linked
+
+      # --no-verify-jwt : les référents n'ont pas de compte, la fonction
+      # doit répondre sans jeton. Ses propres contrôles (code d'accès,
+      # limitation de débit, champ piège, captcha) prennent le relais.
+      - name: Déploiement de la fonction publique
+        run: supabase functions deploy public-submission --project-ref "$PROJECT_REF" --no-verify-jwt
