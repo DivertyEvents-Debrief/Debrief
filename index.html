@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#ffffff" />
+    <!-- Le lien du formulaire circule par message privé : il ne doit pas
+         remonter dans les moteurs de recherche (§21 du cahier des charges). -->
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Débriefing après événement</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=IBM+Plex+Mono:wght@400;600&family=Instrument+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <script>
+      // Les couleurs sont administrables et stockées en base. On applique la
+      // dernière valeur connue avant même le premier rendu pour éviter que la
+      // page clignote du vert par défaut vers le vert de l'agence.
+      try {
+        var saved = JSON.parse(localStorage.getItem('debrief:theme') || 'null')
+        if (saved && saved.brand) {
+          document.documentElement.style.setProperty('--brand', saved.brand)
+          if (saved.warm) document.documentElement.style.setProperty('--warm', saved.warm)
+        }
+      } catch (e) {}
+    </script>
+  </head>
+  <body class="min-h-dvh antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
