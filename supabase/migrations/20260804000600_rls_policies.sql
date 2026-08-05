@@ -35,17 +35,21 @@ alter table public.public_access_codes     enable row level security;
 -- ---------------------------------------------------------------------
 -- profiles
 -- ---------------------------------------------------------------------
+drop policy if exists profiles_select on public.profiles;
 create policy profiles_select on public.profiles
   for select to authenticated using (true);
 
+drop policy if exists profiles_update_self on public.profiles;
 create policy profiles_update_self on public.profiles
   for update to authenticated
   using (id = auth.uid() or public.is_admin())
   with check (id = auth.uid() or public.is_admin());
 
+drop policy if exists profiles_admin_write on public.profiles;
 create policy profiles_admin_write on public.profiles
   for insert to authenticated with check (public.is_admin());
 
+drop policy if exists profiles_admin_delete on public.profiles;
 create policy profiles_admin_delete on public.profiles
   for delete to authenticated using (public.is_admin());
 
@@ -69,13 +73,16 @@ begin
 end;
 $$;
 
+drop trigger if exists profiles_guard_privileges on public.profiles;
 create trigger profiles_guard_privileges
   before update on public.profiles
   for each row execute function public.guard_profile_privileges();
 
+drop policy if exists profile_permissions_select on public.profile_permissions;
 create policy profile_permissions_select on public.profile_permissions
   for select to authenticated using (profile_id = auth.uid() or public.is_admin());
 
+drop policy if exists profile_permissions_admin on public.profile_permissions;
 create policy profile_permissions_admin on public.profile_permissions
   for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
@@ -89,9 +96,11 @@ begin
     'referents', 'statuses', 'materials', 'material_categories',
     'client_groups', 'client_group_aliases', 'application_settings'
   ] loop
+    execute format('drop policy if exists %I on public.%I', t || '_select', t);
     execute format(
       'create policy %I on public.%I for select to authenticated using (true)',
       t || '_select', t);
+    execute format('drop policy if exists %I on public.%I', t || '_admin', t);
     execute format(
       'create policy %I on public.%I for all to authenticated using (public.is_admin()) with check (public.is_admin())',
       t || '_admin', t);
@@ -105,9 +114,11 @@ do $$
 declare t text;
 begin
   foreach t in array array['form_versions', 'form_sections', 'form_modules'] loop
+    execute format('drop policy if exists %I on public.%I', t || '_select', t);
     execute format(
       'create policy %I on public.%I for select to authenticated using (true)',
       t || '_select', t);
+    execute format('drop policy if exists %I on public.%I', t || '_builder', t);
     execute format(
       'create policy %I on public.%I for all to authenticated using (public.has_permission(''form_builder'')) with check (public.has_permission(''form_builder''))',
       t || '_builder', t);
@@ -117,15 +128,18 @@ end $$;
 -- ---------------------------------------------------------------------
 -- debriefs : la règle centrale
 -- ---------------------------------------------------------------------
+drop policy if exists debriefs_select on public.debriefs;
 create policy debriefs_select on public.debriefs
   for select to authenticated
   using (public.can_read_all_debriefs() or commercial_id = auth.uid());
 
+drop policy if exists debriefs_update on public.debriefs;
 create policy debriefs_update on public.debriefs
   for update to authenticated
   using (public.can_read_all_debriefs() or commercial_id = auth.uid())
   with check (public.can_read_all_debriefs() or commercial_id = auth.uid());
 
+drop policy if exists debriefs_admin_delete on public.debriefs;
 create policy debriefs_admin_delete on public.debriefs
   for delete to authenticated using (public.is_admin());
 
@@ -144,6 +158,7 @@ begin
 end;
 $$;
 
+drop trigger if exists debriefs_guard_reassignment on public.debriefs;
 create trigger debriefs_guard_reassignment
   before update on public.debriefs
   for each row execute function public.guard_debrief_reassignment();
@@ -155,9 +170,11 @@ do $$
 declare t text;
 begin
   foreach t in array array['debrief_responses', 'material_feedback_items', 'attachments'] loop
+    execute format('drop policy if exists %I on public.%I', t || '_select', t);
     execute format(
       'create policy %I on public.%I for select to authenticated using (public.can_access_debrief(debrief_id))',
       t || '_select', t);
+    execute format('drop policy if exists %I on public.%I', t || '_admin', t);
     execute format(
       'create policy %I on public.%I for all to authenticated using (public.is_admin()) with check (public.is_admin())',
       t || '_admin', t);
@@ -165,21 +182,26 @@ begin
 end $$;
 
 -- Notes internes : jamais visibles côté public, jamais modifiables par autrui.
+drop policy if exists internal_notes_select on public.internal_notes;
 create policy internal_notes_select on public.internal_notes
   for select to authenticated using (public.can_access_debrief(debrief_id));
 
+drop policy if exists internal_notes_insert on public.internal_notes;
 create policy internal_notes_insert on public.internal_notes
   for insert to authenticated
   with check (author_id = auth.uid() and public.can_access_debrief(debrief_id));
 
+drop policy if exists internal_notes_update_own on public.internal_notes;
 create policy internal_notes_update_own on public.internal_notes
   for update to authenticated
   using (author_id = auth.uid() or public.is_admin())
   with check (author_id = auth.uid() or public.is_admin());
 
+drop policy if exists internal_notes_delete_own on public.internal_notes;
 create policy internal_notes_delete_own on public.internal_notes
   for delete to authenticated using (author_id = auth.uid() or public.is_admin());
 
+drop policy if exists activity_logs_select on public.debrief_activity_logs;
 create policy activity_logs_select on public.debrief_activity_logs
   for select to authenticated
   using (
@@ -190,15 +212,19 @@ create policy activity_logs_select on public.debrief_activity_logs
 -- ---------------------------------------------------------------------
 -- Espace personnel
 -- ---------------------------------------------------------------------
+drop policy if exists notifications_own on public.notifications;
 create policy notifications_own on public.notifications
   for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 
+drop policy if exists saved_views_own on public.saved_statistic_views;
 create policy saved_views_own on public.saved_statistic_views
   for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 
+drop policy if exists export_logs_insert on public.statistic_export_logs;
 create policy export_logs_insert on public.statistic_export_logs
   for insert to authenticated with check (user_id = auth.uid());
 
+drop policy if exists export_logs_select on public.statistic_export_logs;
 create policy export_logs_select on public.statistic_export_logs
   for select to authenticated using (user_id = auth.uid() or public.is_admin());
 
@@ -206,5 +232,6 @@ create policy export_logs_select on public.statistic_export_logs
 -- Tables purement serveur : aucune politique permissive.
 -- (RLS activée sans policy = tout est refusé sauf clé de service.)
 -- ---------------------------------------------------------------------
+drop policy if exists access_codes_admin on public.public_access_codes;
 create policy access_codes_admin on public.public_access_codes
   for all to authenticated using (public.is_admin()) with check (public.is_admin());

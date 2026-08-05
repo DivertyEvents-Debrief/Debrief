@@ -14,6 +14,7 @@ create table if not exists public.form_versions (
   unique (version_number)
 );
 
+drop trigger if exists form_versions_set_updated_at on public.form_versions;
 create trigger form_versions_set_updated_at
   before update on public.form_versions
   for each row execute function public.set_updated_at();
@@ -35,6 +36,7 @@ create table if not exists public.form_sections (
   unique (form_version_id, section_key)
 );
 
+drop trigger if exists form_sections_set_updated_at on public.form_sections;
 create trigger form_sections_set_updated_at
   before update on public.form_sections
   for each row execute function public.set_updated_at();
@@ -66,6 +68,7 @@ create table if not exists public.form_modules (
 create index if not exists form_modules_version_order_idx
   on public.form_modules (form_version_id, sort_order);
 
+drop trigger if exists form_modules_set_updated_at on public.form_modules;
 create trigger form_modules_set_updated_at
   before update on public.form_modules
   for each row execute function public.set_updated_at();

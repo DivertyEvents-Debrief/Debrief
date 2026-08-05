@@ -69,6 +69,7 @@ begin
 end;
 $$;
 
+drop trigger if exists attachments_cleanup_objects on public.attachments;
 create trigger attachments_cleanup_objects
   after delete on public.attachments
   for each row execute function public.cleanup_attachment_objects();

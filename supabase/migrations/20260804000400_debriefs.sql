@@ -42,6 +42,7 @@ create index if not exists debriefs_client_idx      on public.debriefs (normaliz
 create index if not exists debriefs_callback_idx    on public.debriefs (callback_requested) where callback_requested;
 create index if not exists debriefs_unread_idx      on public.debriefs (read_at) where read_at is null;
 
+drop trigger if exists debriefs_set_updated_at on public.debriefs;
 create trigger debriefs_set_updated_at
   before update on public.debriefs
   for each row execute function public.set_updated_at();
@@ -60,6 +61,7 @@ begin
 end;
 $$;
 
+drop trigger if exists debriefs_assign_reference on public.debriefs;
 create trigger debriefs_assign_reference
   before insert on public.debriefs
   for each row execute function public.assign_public_reference();
@@ -84,6 +86,7 @@ create table if not exists public.debrief_responses (
 create index if not exists debrief_responses_key_idx on public.debrief_responses (technical_key);
 create index if not exists debrief_responses_value_idx on public.debrief_responses using gin (response_value);
 
+drop trigger if exists form_modules_prevent_delete on public.form_modules;
 create trigger form_modules_prevent_delete
   before delete on public.form_modules
   for each row execute function public.prevent_used_module_deletion();
@@ -139,10 +142,12 @@ begin
 end;
 $$;
 
+drop trigger if exists attachments_refresh_counters on public.attachments;
 create trigger attachments_refresh_counters
   after insert or delete on public.attachments
   for each row execute function public.refresh_debrief_counters();
 
+drop trigger if exists material_feedback_refresh_counters on public.material_feedback_items;
 create trigger material_feedback_refresh_counters
   after insert or delete on public.material_feedback_items
   for each row execute function public.refresh_debrief_counters();
@@ -161,6 +166,7 @@ create table if not exists public.internal_notes (
 
 create index if not exists internal_notes_debrief_idx on public.internal_notes (debrief_id, created_at desc);
 
+drop trigger if exists internal_notes_set_updated_at on public.internal_notes;
 create trigger internal_notes_set_updated_at
   before update on public.internal_notes
   for each row execute function public.set_updated_at();
@@ -210,6 +216,7 @@ create table if not exists public.saved_statistic_views (
 create unique index if not exists saved_views_one_default_idx
   on public.saved_statistic_views (user_id) where is_default;
 
+drop trigger if exists saved_views_set_updated_at on public.saved_statistic_views;
 create trigger saved_views_set_updated_at
   before update on public.saved_statistic_views
   for each row execute function public.set_updated_at();

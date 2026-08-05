@@ -23,6 +23,7 @@ create table if not exists public.profiles (
 create index if not exists profiles_active_commercial_idx
   on public.profiles (active, selectable_as_commercial, sort_order);
 
+drop trigger if exists profiles_set_updated_at on public.profiles;
 create trigger profiles_set_updated_at
   before update on public.profiles
   for each row execute function public.set_updated_at();
@@ -68,6 +69,7 @@ create table if not exists public.referents (
 create index if not exists referents_active_idx on public.referents (active, sort_order, display_name);
 create index if not exists referents_normalized_idx on public.referents (normalized_name);
 
+drop trigger if exists referents_set_updated_at on public.referents;
 create trigger referents_set_updated_at
   before update on public.referents
   for each row execute function public.set_updated_at();
@@ -95,6 +97,7 @@ create table if not exists public.statuses (
 create unique index if not exists statuses_single_default_idx
   on public.statuses ((is_default)) where is_default;
 
+drop trigger if exists statuses_set_updated_at on public.statuses;
 create trigger statuses_set_updated_at
   before update on public.statuses
   for each row execute function public.set_updated_at();
@@ -111,6 +114,7 @@ create table if not exists public.material_categories (
   updated_at  timestamptz not null default now()
 );
 
+drop trigger if exists material_categories_set_updated_at on public.material_categories;
 create trigger material_categories_set_updated_at
   before update on public.material_categories
   for each row execute function public.set_updated_at();
@@ -128,6 +132,7 @@ create table if not exists public.materials (
 
 create unique index if not exists materials_normalized_idx on public.materials (normalized_label);
 
+drop trigger if exists materials_set_updated_at on public.materials;
 create trigger materials_set_updated_at
   before update on public.materials
   for each row execute function public.set_updated_at();
@@ -163,6 +168,7 @@ create table if not exists public.application_settings (
   updated_at  timestamptz not null default now()
 );
 
+drop trigger if exists application_settings_set_updated_at on public.application_settings;
 create trigger application_settings_set_updated_at
   before update on public.application_settings
   for each row execute function public.set_updated_at();
