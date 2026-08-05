@@ -1,0 +1,69 @@
+name: Déploiement GitHub Pages
+
+# Publie le front statique à chaque poussée sur la branche principale.
+# Les clés viennent des « secrets » et « variables » du dépôt : rien de
+# sensible n'est écrit dans le code. La clé anon est publique par
+# conception (elle finit dans le JavaScript envoyé au navigateur) ; la clé
+# de service, elle, n'apparaît nulle part ici — elle vit uniquement dans
+# les secrets de la fonction Edge Supabase.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Un seul déploiement à la fois ; on laisse finir celui qui est en cours.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Installation
+        run: npm ci
+
+      - name: Contrôle des types
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test
+
+      - name: Construction
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          # Dépôt de projet : le site vit sous /<nom-du-depot>/.
+          # Pour un dépôt <pseudo>.github.io, mettre VITE_BASE_PATH=/ dans
+          # les variables du dépôt.
+          VITE_BASE_PATH: ${{ vars.VITE_BASE_PATH || format('/{0}/', github.event.repository.name) }}
+        run: npm run build:pages
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
