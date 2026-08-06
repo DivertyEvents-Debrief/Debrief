@@ -42,5 +42,15 @@ jobs:
       # --no-verify-jwt : les référents n'ont pas de compte, la fonction
       # doit répondre sans jeton. Ses propres contrôles (code d'accès,
       # limitation de débit, champ piège, captcha) prennent le relais.
+      #
+      # Ce réglage se réinitialise à chaque déploiement quand on passe par
+      # le tableau de bord ; l'option en ligne de commande, elle, le repose
+      # correctement à chaque fois. C'est une raison de préférer ce
+      # workflow au déploiement manuel.
       - name: Déploiement de la fonction publique
         run: supabase functions deploy public-submission --project-ref "$PROJECT_REF" --no-verify-jwt
+
+      # Celle-ci garde la vérification de jeton : elle n'est pas publique,
+      # et refait de son côté le contrôle du rôle administrateur en base.
+      - name: Déploiement de la fonction d'administration
+        run: supabase functions deploy admin-users --project-ref "$PROJECT_REF"
