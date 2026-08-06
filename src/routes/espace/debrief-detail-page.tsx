@@ -1,9 +1,10 @@
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, CalendarDays, CheckCircle2, PhoneCall, Trash2, User } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, CalendarDays, CheckCircle2, PhoneCall, Trash2, User } from 'lucide-react'
 import {
   addInternalNote,
   changeStatus,
+  deleteDebrief,
   deleteInternalNote,
   deleteNoteAllowed,
   fetchDebriefDetail,
@@ -19,7 +20,7 @@ import { ResponseList } from '@/components/workspace/response-list'
 import { StatusPill } from '@/components/workspace/status-pill'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, EmptyState } from '@/components/ui/card'
-import { TextArea, inputClasses } from '@/components/ui/field'
+import { TextArea, TextInput, inputClasses } from '@/components/ui/field'
 import { ReferenceStamp } from '@/components/ui/stamp'
 import { PageLoader } from '@/components/ui/page-loader'
 import { formatDate, formatDateTime } from '@/lib/utils'
@@ -232,6 +233,16 @@ export default function DebriefDetailPage() {
             onChanged={reload}
           />
 
+          {profile?.role === 'admin' && (
+            <DeletePanel
+              reference={d.public_reference}
+              onDelete={async () => {
+                await deleteDebrief(d.id)
+                navigate('/espace/debriefings', { replace: true })
+              }}
+            />
+          )}
+
           <Card>
             <CardHeader title="Journal" description="Qui a fait quoi, et quand." />
             {detail.activity.length === 0 ? (
@@ -279,6 +290,8 @@ function describeAction(action: string, newValue: unknown): string {
       return 'Débriefing ouvert pour la première fois'
     case 'status_changed':
       return status ? `Statut passé à « ${status} »` : 'Statut modifié'
+    case 'debrief_deleted':
+      return 'Débriefing supprimé définitivement'
     case 'callback_updated':
       return (newValue as { handled?: boolean } | null)?.handled
         ? 'Rappel marqué comme traité'
@@ -374,6 +387,102 @@ function NotesPanel({
             </li>
           ))}
         </ul>
+      )}
+    </Card>
+  )
+}
+
+/**
+ * Suppression définitive.
+ *
+ * La confirmation demande de retaper la référence plutôt qu'un simple
+ * « êtes-vous sûr ? ». L'opération efface les réponses, les photos et les
+ * notes sans retour possible : elle mérite un geste délibéré, pas un clic
+ * réflexe sur une boîte de dialogue.
+ */
+function DeletePanel({
+  reference,
+  onDelete,
+}: {
+  reference: string
+  onDelete: () => Promise<void>
+}) {
+  const [open, setOpen] = React.useState(false)
+  const [typed, setTyped] = React.useState('')
+  const [pending, setPending] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+
+  const matches = typed.trim().toUpperCase() === reference.toUpperCase()
+
+  return (
+    <Card className="border-danger/30">
+      <CardHeader
+        title="Supprimer ce débriefing"
+        description="Réponses, photos, notes internes et retours matériel sont effacés définitivement."
+      />
+
+      {!open ? (
+        <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>
+          <Trash2 className="size-4" aria-hidden />
+          Supprimer…
+        </Button>
+      ) : (
+        <div className="space-y-3">
+          <p className="flex items-start gap-2 text-sm text-ink-muted">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-danger" aria-hidden />
+            Cette action est irréversible. Seule une trace au journal conservera la référence et
+            votre nom.
+          </p>
+
+          <label className="block space-y-1.5 text-sm">
+            <span className="font-medium">
+              Retapez <span className="font-mono">{reference}</span> pour confirmer
+            </span>
+            <TextInput
+              value={typed}
+              onChange={(event) => setTyped(event.target.value)}
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </label>
+
+          {error && (
+            <p role="alert" className="text-sm text-danger">
+              {error}
+            </p>
+          )}
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setOpen(false)
+                setTyped('')
+                setError(null)
+              }}
+            >
+              Annuler
+            </Button>
+            <Button
+              size="sm"
+              disabled={!matches}
+              loading={pending}
+              onClick={async () => {
+                setPending(true)
+                try {
+                  await onDelete()
+                } catch (caught) {
+                  setError((caught as Error).message)
+                  setPending(false)
+                }
+              }}
+            >
+              <Trash2 className="size-4" aria-hidden />
+              Supprimer définitivement
+            </Button>
+          </div>
+        </div>
       )}
     </Card>
   )

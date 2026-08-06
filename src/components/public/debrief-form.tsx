@@ -1,20 +1,18 @@
 
 import * as React from 'react'
-import { ArrowLeft, ArrowRight, Send, TriangleAlert } from 'lucide-react'
+import { Send, TriangleAlert } from 'lucide-react'
 import type { FormModule, PublicFormDefinition } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Field, TextArea, TextInput } from '@/components/ui/field'
 import { RatingScale } from '@/components/form/rating-scale'
 import { SearchableSelect } from '@/components/form/searchable-select'
 import { YesNoChoice } from '@/components/form/yes-no'
-import { StepProgress } from '@/components/form/step-progress'
 import {
   MaterialFeedbackList,
   createMaterialRow,
   type MaterialRow,
 } from '@/components/form/material-feedback'
 import { ImageUploader, type UploadedImage } from '@/components/form/image-uploader'
-import { DebriefSummary } from '@/components/public/debrief-summary'
 import { SubmissionSuccess } from '@/components/public/submission-success'
 import { startSubmission, submitDebriefAction } from '@/lib/public-api'
 import {
@@ -24,14 +22,11 @@ import {
 } from '@/lib/form-validation'
 import { DEFAULT_RATING_SCALE, type RatingOption } from '@/lib/ratings'
 
-const SUMMARY_STEP = '__summary__'
-
 type LocalDraft = {
   versionId: string
   draftId: string | null
   answers: AnswerMap
   materialRows: MaterialRow[]
-  stepIndex: number
 }
 
 export function DebriefForm({ definition }: { definition: PublicFormDefinition }) {
@@ -40,7 +35,6 @@ export function DebriefForm({ definition }: { definition: PublicFormDefinition }
   const [answers, setAnswers] = React.useState<AnswerMap>(() => initialAnswers(definition.modules))
   const [materialRows, setMaterialRows] = React.useState<MaterialRow[]>([])
   const [images, setImages] = React.useState<UploadedImage[]>([])
-  const [stepIndex, setStepIndex] = React.useState(0)
   const [errors, setErrors] = React.useState<Record<string, string>>({})
   const [draftId, setDraftId] = React.useState<string | null>(null)
   const [submitting, setSubmitting] = React.useState(false)
@@ -49,8 +43,12 @@ export function DebriefForm({ definition }: { definition: PublicFormDefinition }
   const [restored, setRestored] = React.useState(false)
   const headingRef = React.useRef<HTMLHeadingElement>(null)
 
-  const steps = React.useMemo(() => {
-    const withModules = definition.sections
+  // Toutes les sections sont empilées sur une seule page. Le référent voit
+  // l'ensemble des questions d'un coup : il sait tout de suite ce qu'on
+  // lui demande, et il peut revenir en arrière en faisant défiler plutôt
+  // qu'en naviguant.
+  const sections = React.useMemo(() => {
+    return definition.sections
       .map((section) => ({
         key: section.section_key,
         title: section.title,
@@ -60,20 +58,7 @@ export function DebriefForm({ definition }: { definition: PublicFormDefinition }
           .sort((a, b) => a.sort_order - b.sort_order),
       }))
       .filter((section) => section.modules.length > 0)
-
-    return [
-      ...withModules,
-      {
-        key: SUMMARY_STEP,
-        title: 'Vérification',
-        description: 'Relisez vos réponses. Vous pouvez encore tout modifier.',
-        modules: [] as FormModule[],
-      },
-    ]
   }, [definition])
-
-  const step = steps[stepIndex]
-  const isSummary = step?.key === SUMMARY_STEP
 
   // --- Reprise après un rafraîchissement accidentel -------------------
   React.useEffect(() => {
@@ -85,7 +70,6 @@ export function DebriefForm({ definition }: { definition: PublicFormDefinition }
           setAnswers((current) => ({ ...current, ...draft.answers }))
           setMaterialRows(draft.materialRows ?? [])
           setDraftId(draft.draftId)
-          setStepIndex(Math.min(draft.stepIndex ?? 0, steps.length - 1))
           setRestored(true)
         }
       }
@@ -104,18 +88,13 @@ export function DebriefForm({ definition }: { definition: PublicFormDefinition }
       draftId,
       answers,
       materialRows,
-      stepIndex,
     }
     try {
       window.localStorage.setItem(storageKey, JSON.stringify(draft))
     } catch {
       // Stockage indisponible (navigation privée) : la saisie continue.
     }
-  }, [answers, materialRows, stepIndex, draftId, definition.versionId, storageKey, result])
-
-  React.useEffect(() => {
-    headingRef.current?.focus()
-  }, [stepIndex])
+  }, [answers, materialRows, draftId, definition.versionId, storageKey, result])
 
   async function ensureDraft() {
     if (draftId) return draftId
@@ -138,32 +117,6 @@ export function DebriefForm({ definition }: { definition: PublicFormDefinition }
     })
   }
 
-  function validateCurrentStep(): boolean {
-    if (!step || isSummary) return true
-    const stepErrors = validateModules(step.modules, answers, {
-      materialRowCount: materialRows.filter((row) => row.material_name.trim() !== '').length,
-      imageCount: images.length,
-    })
-    setErrors(stepErrors)
-    if (Object.keys(stepErrors).length > 0) {
-      const firstKey = Object.keys(stepErrors)[0]
-      document.getElementById(firstKey ?? '')?.scrollIntoView({ block: 'center', behavior: 'smooth' })
-      return false
-    }
-    return true
-  }
-
-  function goNext() {
-    if (!validateCurrentStep()) return
-    setStepIndex((index) => Math.min(index + 1, steps.length - 1))
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  function goPrevious() {
-    setStepIndex((index) => Math.max(index - 1, 0))
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
   async function submit() {
     if (submitting) return // protection contre le double clic
     setSubmissionError(null)
@@ -174,11 +127,16 @@ export function DebriefForm({ definition }: { definition: PublicFormDefinition }
     })
     if (Object.keys(allErrors).length > 0) {
       setErrors(allErrors)
+
+      // Sur une page unique, la première question en défaut peut se
+      // trouver hors écran : on l'amène au centre et on y place le focus,
+      // sinon le bouton semble ne rien faire.
       const firstKey = Object.keys(allErrors)[0]
-      const stepWithError = steps.findIndex((candidate) =>
-        candidate.modules.some((module) => module.technical_key === firstKey),
-      )
-      if (stepWithError >= 0) setStepIndex(stepWithError)
+      if (firstKey) {
+        const target = document.getElementById(firstKey)
+        target?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+        ;(target as HTMLElement | null)?.focus?.()
+      }
       return
     }
 
@@ -232,61 +190,53 @@ export function DebriefForm({ definition }: { definition: PublicFormDefinition }
     )
   }
 
-  if (!step) return null
+  const errorCount = Object.keys(errors).length
 
   return (
-    <div className="space-y-6">
-      <StepProgress
-        steps={steps.map((s) => ({ key: s.key, title: s.title }))}
-        currentIndex={stepIndex}
-        onJump={setStepIndex}
-      />
-
-      {restored && stepIndex > 0 && (
+    <div className="space-y-10">
+      {restored && (
         <p className="rounded-[var(--radius-control)] border border-brand-line bg-brand-softer px-3 py-2 text-sm text-brand-strong">
           Vos réponses précédentes ont été retrouvées sur cet appareil.
         </p>
       )}
 
-      <div className="space-y-2">
-        <h2 ref={headingRef} tabIndex={-1} className="text-2xl font-semibold outline-none sm:text-[1.7rem]">
-          {step.title}
-        </h2>
-        {step.description && <p className="text-ink-muted">{step.description}</p>}
-      </div>
+      {sections.map((section, index) => (
+        <section key={section.key} aria-labelledby={`titre-${section.key}`} className="space-y-6">
+          <div className="space-y-1.5 border-b border-line pb-3">
+            <h2
+              id={`titre-${section.key}`}
+              ref={index === 0 ? headingRef : undefined}
+              tabIndex={-1}
+              className="text-xl font-semibold outline-none sm:text-2xl"
+            >
+              {section.title}
+            </h2>
+            {section.description && (
+              <p className="text-sm text-ink-muted">{section.description}</p>
+            )}
+          </div>
 
-      {isSummary ? (
-        <DebriefSummary
-          definition={definition}
-          answers={answers}
-          materialRows={materialRows}
-          images={images}
-          onEditSection={(sectionKey) => {
-            const index = steps.findIndex((candidate) => candidate.key === sectionKey)
-            if (index >= 0) setStepIndex(index)
-          }}
-        />
-      ) : (
-        <div className="space-y-7">
-          {step.modules
-            .filter((module) => isModuleVisible(module, answers))
-            .map((module) => (
-              <ModuleField
-                key={module.id}
-                module={module}
-                definition={definition}
-                value={answers[module.technical_key]}
-                error={errors[module.technical_key]}
-                onChange={(value) => setAnswer(module.technical_key, value)}
-                materialRows={materialRows}
-                onMaterialChange={setMaterialRows}
-                images={images}
-                onImagesChange={setImages}
-                draftId={draftId}
-              />
-            ))}
-        </div>
-      )}
+          <div className="space-y-7">
+            {section.modules
+              .filter((module) => isModuleVisible(module, answers))
+              .map((module) => (
+                <ModuleField
+                  key={module.id}
+                  module={module}
+                  definition={definition}
+                  value={answers[module.technical_key]}
+                  error={errors[module.technical_key]}
+                  onChange={(value) => setAnswer(module.technical_key, value)}
+                  materialRows={materialRows}
+                  onMaterialChange={setMaterialRows}
+                  images={images}
+                  onImagesChange={setImages}
+                  draftId={draftId}
+                />
+              ))}
+          </div>
+        </section>
+      ))}
 
       {submissionError && (
         <p
@@ -298,30 +248,35 @@ export function DebriefForm({ definition }: { definition: PublicFormDefinition }
         </p>
       )}
 
-      <div className="flex flex-col-reverse gap-2 border-t border-line pt-5 sm:flex-row sm:justify-between">
+      {/* Le décompte est annoncé aux lecteurs d'écran : sur une page longue,
+          les messages d'erreur peuvent tous être hors champ de vision. */}
+      {errorCount > 0 && (
+        <p
+          role="alert"
+          className="flex items-start gap-2 rounded-[var(--radius-control)] border border-danger/30 bg-danger-soft px-3 py-2.5 text-sm text-danger"
+        >
+          <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+          {errorCount === 1
+            ? 'Une réponse est manquante ou incorrecte. Elle est signalée en rouge ci-dessus.'
+            : `${errorCount} réponses sont manquantes ou incorrectes. Elles sont signalées en rouge ci-dessus.`}
+        </p>
+      )}
+
+      <div className="sticky bottom-0 -mx-4 border-t border-line bg-surface/95 px-4 py-4 backdrop-blur sm:mx-0 sm:rounded-b-[var(--radius-card)] sm:px-0">
         <Button
           type="button"
-          variant="ghost"
           size="lg"
-          onClick={goPrevious}
-          disabled={stepIndex === 0}
-          className="sm:w-auto"
+          onClick={() => void submit()}
+          loading={submitting}
+          className="w-full sm:w-auto"
         >
-          <ArrowLeft className="size-4" aria-hidden />
-          Précédent
+          <Send className="size-4" aria-hidden />
+          {submitting ? 'Envoi en cours…' : 'Envoyer le débriefing'}
         </Button>
-
-        {isSummary ? (
-          <Button type="button" size="lg" onClick={() => void submit()} loading={submitting}>
-            <Send className="size-4" aria-hidden />
-            {submitting ? 'Envoi en cours…' : 'Envoyer le débriefing'}
-          </Button>
-        ) : (
-          <Button type="button" size="lg" onClick={goNext}>
-            Continuer
-            <ArrowRight className="size-4" aria-hidden />
-          </Button>
-        )}
+        <p className="mt-2 text-xs text-ink-faint">
+          Vos réponses sont conservées sur cet appareil jusqu'à l'envoi : vous pouvez fermer la
+          page et revenir plus tard.
+        </p>
       </div>
     </div>
   )

@@ -60,6 +60,7 @@ du projet et les deux clés.
    20260805000300_service_role_grants.sql
    20260805000400_admin_rpc.sql
    20260805000500_first_admin_guard.sql
+   20260805000600_delete_debrief.sql
    ```
 
    L'ordre compte : chaque fichier s'appuie sur le précédent.

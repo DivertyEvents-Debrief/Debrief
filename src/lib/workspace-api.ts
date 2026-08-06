@@ -215,3 +215,23 @@ export function deleteNoteAllowed(
 ): boolean {
   return isAdmin || noteAuthorId === currentUserId
 }
+
+/**
+ * Suppression définitive, réservée aux administrateurs.
+ *
+ * Tout part en cascade — réponses, matériel, photos du stockage, notes.
+ * Seule survit une ligne de journal détachée qui garde la référence et le
+ * nom de l'auteur : on doit pouvoir répondre plus tard à « qu'est-ce qui a
+ * disparu, et qui l'a supprimé ? ».
+ */
+export async function deleteDebrief(id: string): Promise<string> {
+  const { data, error } = await getSupabase().rpc('delete_debrief', { p_debrief_id: id })
+  if (error) {
+    throw new Error(
+      error.code === '42501'
+        ? 'Seul un administrateur peut supprimer un débriefing.'
+        : "Le débriefing n'a pas pu être supprimé.",
+    )
+  }
+  return (data as { reference: string }).reference
+}
