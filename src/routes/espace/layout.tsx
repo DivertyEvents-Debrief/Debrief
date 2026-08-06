@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { BarChart3, Inbox, LayoutDashboard, LogOut, Settings2, Wrench } from 'lucide-react'
+import { BarChart3, FileText, Inbox, LayoutDashboard, LogOut, Settings2, Wrench } from 'lucide-react'
 import { useSession } from '@/lib/session'
 import { BrandLogo } from '@/components/ui/brand-logo'
 import { cn } from '@/lib/utils'
@@ -10,6 +10,9 @@ type Link = {
   icon: typeof LayoutDashboard
   end: boolean
   roles?: string[]
+  // Une permission accordée compte par compte ouvre l'entrée même si le
+  // rôle ne suffit pas.
+  permission?: string
 }
 
 const LINKS: Link[] = [
@@ -30,6 +33,14 @@ const LINKS: Link[] = [
     roles: ['admin', 'commercial_plus'],
   },
   {
+    to: '/espace/formulaire',
+    label: 'Formulaire',
+    icon: FileText,
+    end: false,
+    roles: ['admin'],
+    permission: 'form_builder',
+  },
+  {
     to: '/espace/administration',
     label: 'Administration',
     icon: Settings2,
@@ -44,9 +55,11 @@ export default function EspaceLayout() {
 
   // Les entrées réservées sont masquées par confort. Si quelqu'un force
   // l'URL, la page s'ouvre mais les RPC refusent : le contrôle est en base.
-  const links = LINKS.filter(
-    (link) => !link.roles || (profile?.role ? link.roles.includes(profile.role) : false),
-  )
+  const links = LINKS.filter((link) => {
+    if (!link.roles) return true
+    if (profile?.role && link.roles.includes(profile.role)) return true
+    return link.permission ? (profile?.permissions ?? []).includes(link.permission as never) : false
+  })
 
   return (
     <div className="min-h-dvh bg-canvas">

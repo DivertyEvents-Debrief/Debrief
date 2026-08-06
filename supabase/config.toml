@@ -32,3 +32,8 @@ enable_confirmations = true
 # vérification de jeton et applique ses propres contrôles.
 [functions.public-submission]
 verify_jwt = false
+
+# L'administration n'est pas publique : le jeton est vérifié par la
+# passerelle, puis le rôle est relu en base avec la clé de service.
+[functions.admin-users]
+verify_jwt = true

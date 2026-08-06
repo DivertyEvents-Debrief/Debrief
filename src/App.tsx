@@ -4,6 +4,7 @@ import { PublicDebriefPage } from '@/routes/public/debrief-page'
 import { SessionProvider } from '@/lib/session'
 import { RequireAuth } from '@/routes/espace/require-auth'
 import { RequireAdmin } from '@/routes/espace/administration/require-admin'
+import { RequireBuilder } from '@/routes/espace/form-builder/require-builder'
 import { PageLoader } from '@/components/ui/page-loader'
 
 // L'espace permanent est chargé à la demande : un référent qui ouvre le
@@ -14,6 +15,8 @@ const EspaceLayout = lazy(() => import('@/routes/espace/layout'))
 const DashboardPage = lazy(() => import('@/routes/espace/dashboard-page'))
 const DebriefListPage = lazy(() => import('@/routes/espace/debrief-list-page'))
 const DebriefDetailPage = lazy(() => import('@/routes/espace/debrief-detail-page'))
+const FormVersionsPage = lazy(() => import('@/routes/espace/form-builder/versions-page'))
+const FormEditorPage = lazy(() => import('@/routes/espace/form-builder/editor-page'))
 const MaterialPage = lazy(() => import('@/routes/espace/material-page'))
 const StatisticsPlaceholder = lazy(() => import('@/routes/espace/statistics-placeholder'))
 const AdministrationLayout = lazy(() => import('@/routes/espace/administration/layout'))
@@ -51,6 +54,22 @@ export function App() {
               <Route path="debriefings" element={<DebriefListPage />} />
               <Route path="debriefings/:id" element={<DebriefDetailPage />} />
               <Route path="materiel" element={<MaterialPage />} />
+              <Route
+                path="formulaire"
+                element={
+                  <RequireBuilder>
+                    <FormVersionsPage />
+                  </RequireBuilder>
+                }
+              />
+              <Route
+                path="formulaire/:id"
+                element={
+                  <RequireBuilder>
+                    <FormEditorPage />
+                  </RequireBuilder>
+                }
+              />
               <Route path="statistiques" element={<StatisticsPlaceholder />} />
               <Route
                 path="administration"

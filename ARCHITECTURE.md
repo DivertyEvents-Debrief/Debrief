@@ -172,12 +172,11 @@ debrief-app/
 
 ### Suite prévue
 
-Fondations, sécurité, statistiques SQL, formulaire public, espace permanent (liste, fiche) et administration complète sont en place. Restent à écrire, dans cet ordre :
+Fondations, sécurité, statistiques SQL, formulaire public, espace permanent, administration, rôle logistique et constructeur de formulaire sont en place. Restent à écrire :
 
 | Lot | Contenu | Ce sur quoi il s'appuie |
 |---|---|---|
 | **3** | `/espace/statistiques` : KPI avec comparaison, graphiques Recharts cliquables, tableaux par commercial / référent / client, rappels, matériel, champs personnalisés, tendances, vues enregistrées | les dix RPC `stats_*`, déjà écrites et testables en SQL |
-| **4** | Constructeur de formulaire : liste des versions, édition des modules, réordonnancement, prévisualisation, publication | `duplicate_form_version()`, `publish_form_version()`, `assert_form_version_integrity()` |
 | **6** | Exports CSV / Excel multi-feuilles / PDF individuel / PDF de synthèse / archive d'images, et emails de notification | `statistic_export_logs`, `notifications` |
 
 Chaque lot est essentiellement de l'interface : les règles métier, le périmètre de sécurité et les agrégations qu'il consomme existent déjà et sont interrogeables en `psql`.
