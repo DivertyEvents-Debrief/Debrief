@@ -95,7 +95,7 @@ async function requireAdmin(request: Request): Promise<{ id: string } | null> {
   return { id: profile.id }
 }
 
-const ROLES = new Set(['admin', 'commercial_plus', 'commercial'])
+const ROLES = new Set(['admin', 'commercial_plus', 'commercial', 'logistique'])
 
 async function handleCreate(body: Record<string, unknown>, origin: string | null) {
   const email = String(body.email ?? '').trim().toLowerCase()

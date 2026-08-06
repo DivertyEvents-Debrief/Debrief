@@ -7,7 +7,7 @@
  * y compris les retours JSON des fonctions RPC statistiques.
  */
 
-export type UserRole = 'admin' | 'commercial_plus' | 'commercial'
+export type UserRole = 'admin' | 'commercial_plus' | 'commercial' | 'logistique'
 
 export type AppPermission =
   | 'debriefs:read_all'
@@ -22,6 +22,7 @@ export type AppPermission =
   | 'referents:manage'
   | 'settings:manage'
   | 'logs:read'
+  | 'material:manage'
 
 /**
  * Sous-ensemble accordable compte par compte. `AppPermission` liste toutes

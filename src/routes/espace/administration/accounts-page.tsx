@@ -21,6 +21,14 @@ const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Administrateur',
   commercial_plus: 'Commercial +',
   commercial: 'Commercial',
+  logistique: 'Logistique',
+}
+
+const ROLE_HINTS: Partial<Record<UserRole, string>> = {
+  logistique:
+    "Voit tous les débriefings et gère les retours matériel. N'apparaît jamais dans la liste des commerciaux du formulaire.",
+  commercial_plus: 'Voit tous les débriefings et les statistiques.',
+  commercial: 'Ne voit que les débriefings qui lui sont attribués.',
 }
 
 const PERMISSION_LABELS: Record<GrantablePermission, string> = {
@@ -176,8 +184,13 @@ export default function AccountsPage() {
               />
               <Toggle
                 label="Dans le formulaire public"
-                hint="proposé aux référents"
+                hint={
+                  account.role === 'logistique'
+                    ? 'jamais, pour ce rôle'
+                    : 'proposé aux référents'
+                }
                 checked={account.selectable_as_commercial}
+                disabled={account.role === 'logistique'}
                 onChange={(value) =>
                   run(() => updateAccount(account.id, { selectable_as_commercial: value }))
                 }
@@ -194,6 +207,10 @@ export default function AccountsPage() {
                 />
               ))}
             </div>
+
+            {ROLE_HINTS[account.role] && (
+              <p className="mt-3 text-xs text-ink-faint">{ROLE_HINTS[account.role]}</p>
+            )}
 
             {account.debrief_count > 0 && !account.active && (
               <p className="mt-3 text-xs text-ink-faint">

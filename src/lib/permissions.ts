@@ -22,6 +22,9 @@ const ROLE_PERMISSIONS: Record<UserRole, AppPermission[]> = {
   ],
   commercial_plus: ['debriefs:read_all', 'debriefs:update', 'notes:write'],
   commercial: ['debriefs:update', 'notes:write'],
+  // La logistique lit tous les débriefings et pilote les retours matériel,
+  // sans les prérogatives commerciales : ni statistiques, ni réattribution.
+  logistique: ['debriefs:read_all', 'notes:write', 'material:manage'],
 }
 
 export function permissionsFor(role: UserRole, granted: string[] = []): Set<AppPermission> {
@@ -39,4 +42,5 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   admin: 'Administrateur',
   commercial_plus: 'Commercial +',
   commercial: 'Commercial',
+  logistique: 'Logistique',
 }

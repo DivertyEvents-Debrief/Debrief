@@ -14,6 +14,7 @@ const EspaceLayout = lazy(() => import('@/routes/espace/layout'))
 const DashboardPage = lazy(() => import('@/routes/espace/dashboard-page'))
 const DebriefListPage = lazy(() => import('@/routes/espace/debrief-list-page'))
 const DebriefDetailPage = lazy(() => import('@/routes/espace/debrief-detail-page'))
+const MaterialPage = lazy(() => import('@/routes/espace/material-page'))
 const StatisticsPlaceholder = lazy(() => import('@/routes/espace/statistics-placeholder'))
 const AdministrationLayout = lazy(() => import('@/routes/espace/administration/layout'))
 const AccountsPage = lazy(() => import('@/routes/espace/administration/accounts-page'))
@@ -49,6 +50,7 @@ export function App() {
               <Route index element={<DashboardPage />} />
               <Route path="debriefings" element={<DebriefListPage />} />
               <Route path="debriefings/:id" element={<DebriefDetailPage />} />
+              <Route path="materiel" element={<MaterialPage />} />
               <Route path="statistiques" element={<StatisticsPlaceholder />} />
               <Route
                 path="administration"

@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Field, TextInput } from '@/components/ui/field'
 import { PageLoader } from '@/components/ui/page-loader'
+import { BrandLogo } from '@/components/ui/brand-logo'
 
 const ACCESS_CODE_KEY = 'debrief:access-code'
 
@@ -58,11 +59,22 @@ export function PublicDebriefPage() {
     : result.state === 'error' ? 'Débriefs'
     : result.settings.platform_name
 
+  // `logo_url` reste administrable : s'il est vide, le composant retombe
+  // sur le fichier livré avec l'application.
+  const logoUrl =
+    result.state === 'ready' ? result.definition.settings.logo_url
+    : result.state === 'error' ? null
+    : result.settings.logo_url
+
   return (
     <main id="contenu" className="mx-auto w-full max-w-2xl px-4 pb-24 pt-6 sm:px-6 sm:pt-10">
       <header className="mb-8 space-y-3">
         <div className="flex items-center justify-between gap-4">
-          <p className="font-display text-lg font-semibold tracking-tight">{platformName}</p>
+          <BrandLogo
+            src={logoUrl}
+            alt={platformName}
+            className="h-12 sm:h-14"
+          />
           <Link
             to="/connexion"
             className="inline-flex items-center gap-1.5 rounded-[9px] px-2 py-1 text-sm text-ink-faint hover:text-brand-strong"

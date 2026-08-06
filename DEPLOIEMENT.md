@@ -61,6 +61,8 @@ du projet et les deux clés.
    20260805000400_admin_rpc.sql
    20260805000500_first_admin_guard.sql
    20260805000600_delete_debrief.sql
+   20260805000700_role_logistique_enum.sql
+   20260805000800_logistique.sql
    ```
 
    L'ordre compte : chaque fichier s'appuie sur le précédent.

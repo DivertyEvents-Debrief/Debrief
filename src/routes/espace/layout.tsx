@@ -1,13 +1,41 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { BarChart3, Inbox, LayoutDashboard, LogOut, Settings2 } from 'lucide-react'
+import { BarChart3, Inbox, LayoutDashboard, LogOut, Settings2, Wrench } from 'lucide-react'
 import { useSession } from '@/lib/session'
+import { BrandLogo } from '@/components/ui/brand-logo'
 import { cn } from '@/lib/utils'
 
-const LINKS = [
+type Link = {
+  to: string
+  label: string
+  icon: typeof LayoutDashboard
+  end: boolean
+  roles?: string[]
+}
+
+const LINKS: Link[] = [
   { to: '/espace', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
   { to: '/espace/debriefings', label: 'Débriefings', icon: Inbox, end: false },
-  { to: '/espace/statistiques', label: 'Statistiques', icon: BarChart3, end: false, admin: true },
-  { to: '/espace/administration', label: 'Administration', icon: Settings2, end: false, admin: true },
+  {
+    to: '/espace/materiel',
+    label: 'Retours matériel',
+    icon: Wrench,
+    end: false,
+    roles: ['admin', 'logistique'],
+  },
+  {
+    to: '/espace/statistiques',
+    label: 'Statistiques',
+    icon: BarChart3,
+    end: false,
+    roles: ['admin', 'commercial_plus'],
+  },
+  {
+    to: '/espace/administration',
+    label: 'Administration',
+    icon: Settings2,
+    end: false,
+    roles: ['admin'],
+  },
 ]
 
 export default function EspaceLayout() {
@@ -16,13 +44,20 @@ export default function EspaceLayout() {
 
   // Les entrées réservées sont masquées par confort. Si quelqu'un force
   // l'URL, la page s'ouvre mais les RPC refusent : le contrôle est en base.
-  const links = LINKS.filter((link) => !link.admin || profile?.role === 'admin' || profile?.role === 'commercial_plus')
+  const links = LINKS.filter(
+    (link) => !link.roles || (profile?.role ? link.roles.includes(profile.role) : false),
+  )
 
   return (
     <div className="min-h-dvh bg-canvas">
       <header className="sticky top-0 z-30 border-b border-line bg-surface/90 backdrop-blur">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-4 px-4 sm:px-6">
-          <span className="font-display text-base font-semibold tracking-tight">Débriefs</span>
+          <span className="flex shrink-0 items-center gap-2">
+            <BrandLogo className="h-8" />
+            <span className="sr-only font-display text-base font-semibold tracking-tight sm:not-sr-only">
+              Débriefs
+            </span>
+          </span>
 
           <nav aria-label="Navigation principale" className="hidden flex-1 items-center gap-1 sm:flex">
             {links.map(({ to, label, icon: Icon, end }) => (

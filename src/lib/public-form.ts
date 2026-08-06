@@ -4,7 +4,7 @@ import type { AppSettings, PublicFormDefinition } from '@/lib/types'
 const SETTINGS_DEFAULTS: AppSettings = {
   platform_name: 'Débriefs',
   logo_url: null,
-  primary_color: '#1F8A4C',
+  primary_color: '#98C058',
   secondary_color: '#E8892B',
   welcome_message: 'Merci pour votre prestation.',
   confirmation_message: "C'est envoyé, merci !",

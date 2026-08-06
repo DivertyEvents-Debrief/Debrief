@@ -94,7 +94,7 @@ begin
   v_branding := jsonb_build_object(
     'platform_name',      coalesce(v_settings -> 'platform_name', '"Débriefs"'::jsonb),
     'logo_url',           coalesce(v_settings -> 'logo_url', 'null'::jsonb),
-    'primary_color',      coalesce(v_settings -> 'primary_color', '"#1F8A4C"'::jsonb),
+    'primary_color',      coalesce(v_settings -> 'primary_color', '"#98C058"'::jsonb),
     'secondary_color',    coalesce(v_settings -> 'secondary_color', '"#E8892B"'::jsonb),
     'public_access_mode', coalesce(v_settings -> 'public_access_mode', '"open"'::jsonb)
   );
